@@ -1,0 +1,4 @@
+fastapi
+uvicorn
+universal-ads-sdk
+python-dotenv

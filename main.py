@@ -2,7 +2,7 @@ import os
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, conint
 from dotenv import load_dotenv
 
 from universal_ads_sdk import UniversalAdsClient, APIError, AuthenticationError
@@ -17,6 +17,8 @@ class ReportRequest(BaseModel):
     end_date: str
     adaccount_id: str
     campaign_ids: Optional[List[str]] = None
+    limit: Optional[conint(gt=0)] = None
+    offset: Optional[conint(ge=0)] = None
 
 
 @app.post("/reports/campaign")
@@ -40,12 +42,18 @@ async def get_campaign_report(request: ReportRequest):
             private_key_pem=private_key_pem,
             base_url=base_url
         )
-        report = client.get_campaign_report(
-            start_date=request.start_date,
-            end_date=request.end_date,
-            adaccount_id=request.adaccount_id,
-            campaign_ids=request.campaign_ids,
-        )
+        params = {
+            "start_date": request.start_date,
+            "end_date": request.end_date,
+            "adaccount_id": request.adaccount_id,
+            "campaign_ids": request.campaign_ids,
+        }
+        if request.limit is not None:
+            params["limit"] = request.limit
+        if request.offset is not None:
+            params["offset"] = request.offset
+
+        report = client.get_campaign_report(**params)
         return report
     except AuthenticationError as e:
         raise HTTPException(
